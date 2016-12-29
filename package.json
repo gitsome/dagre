@@ -1,8 +1,8 @@
 {
-  "name": "dagre",
+  "name": "dagre-neural-net",
   "version": "0.7.5-pre",
-  "description": "Graph layout for JavaScript",
-  "author": "Chris Pettitt <cpettitt@gmail.com>",
+  "description": "JavaScript Graph layouts for Simple Neural Networks (branch of dagre)",
+  "author": "John Martin <johndavidfive@gmail.com>",
   "main": "index.js",
   "keywords": [
     "graph",
@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/cpettitt/dagre.git"
+    "url": "https://github.com/gitsome/dagre.git"
   },
   "license": "MIT"
 }
