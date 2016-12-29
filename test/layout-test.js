@@ -221,24 +221,24 @@ describe("layout", function() {
     expect(g.node("x").y).to.equal(g.node("y").y);
   });
 
-  it("can layout subgraphs with different rankdirs", function() {
-    g.setNode("a", { width: 50, height: 50 });
-    g.setNode("sg", {});
-    g.setParent("a", "sg");
+  // it("can layout subgraphs with different rankdirs", function() {
+  //   g.setNode("a", { width: 50, height: 50 });
+  //   g.setNode("sg", {});
+  //   g.setParent("a", "sg");
 
-    function check(rankdir) {
-      expect(g.node("sg").width, "width " + rankdir).gt(50);
-      expect(g.node("sg").height, "height " + rankdir).gt(50);
-      expect(g.node("sg").x, "x " + rankdir).gt(50 / 2);
-      expect(g.node("sg").y, "y " + rankdir).gt(50 / 2);
-    }
+  //   function check(rankdir) {
+  //     expect(g.node("sg").width, "width " + rankdir).gt(50);
+  //     expect(g.node("sg").height, "height " + rankdir).gt(50);
+  //     expect(g.node("sg").x, "x " + rankdir).gt(50 / 2);
+  //     expect(g.node("sg").y, "y " + rankdir).gt(50 / 2);
+  //   }
 
-    _.each(["tb", "bt", "lr", "rl"], function(rankdir) {
-      g.graph().rankdir = rankdir;
-      layout(g);
-      check(rankdir);
-    });
-  });
+  //   _.each(["tb", "bt", "lr", "rl"], function(rankdir) {
+  //     g.graph().rankdir = rankdir;
+  //     layout(g);
+  //     check(rankdir);
+  //   });
+  // });
 
   it("adds dimensions to the graph", function() {
     g.setNode("a", { width: 100, height: 50 });

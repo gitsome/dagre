@@ -1,17 +1,17 @@
 {
-  "name": "dagre",
-  "version": "0.7.4",
+  "name": "dagre-neural-net",
+  "version": "0.0.1",
   "main": [
-    "dist/dagre.core.js",
-    "dist/dagre.core.min.js"
+    "dist/dagre-neural-net.core.js",
+    "dist/dagre-neural-net.core.min.js"
   ],
   "ignore": [
     ".*",
     "README.md",
     "CHANGELOG.md",
     "Makefile",
-    "dist/dagre.js",
-    "dist/dagre.min.js",
+    "dist/dagre-neural-net.js",
+    "dist/dagre-neural-net.min.js",
     "index.js",
     "karma*",
     "lib/**",

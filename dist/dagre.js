@@ -547,14 +547,15 @@ function updateInputGraph(inputGraph, layoutGraph) {
 var graphNumAttrs = ["nodesep", "edgesep", "ranksep", "marginx", "marginy"],
     graphDefaults = { ranksep: 50, edgesep: 20, nodesep: 50, rankdir: "tb" },
     graphAttrs = ["acyclicer", "ranker", "rankdir", "align"],
-    nodeNumAttrs = ["width", "height"],
-    nodeDefaults = { width: 0, height: 0 },
-    edgeNumAttrs = ["minlen", "weight", "width", "height", "labeloffset"],
+    nodeNumAttrs = ["width", "height", "sortrank"],
+    nodeAttrs = ["samerankas"],
+    nodeDefaults = { width: 0, height: 0, sortrank: 0, samerankas: false},
+    edgeNumAttrs = ["minlen", "weight", "width", "height", "labeloffset", "sortrank", "samerankas"],
     edgeDefaults = {
-      minlen: 1, weight: 1, width: 0, height: 0,
+      minlen: 1, weight: 1, width: 0, height: 0, sortrank: 0,
       labeloffset: 10, labelpos: "r"
     },
-    edgeAttrs = ["labelpos"];
+    edgeAttrs = ["labelpos", "sortrank"];
 
 /*
  * Constructs a new graph from the input graph, which can be used for layout.
@@ -573,7 +574,8 @@ function buildLayoutGraph(inputGraph) {
 
   _.each(inputGraph.nodes(), function(v) {
     var node = canonicalize(inputGraph.node(v));
-    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), nodeDefaults));
+    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs),
+        selectAttrs(node, nodeAttrs), nodeDefaults));
     g.setParent(v, inputGraph.parent(v));
   });
 
@@ -831,6 +833,10 @@ function positionSelfEdges(g) {
 
 function selectNumberAttrs(obj, attrs) {
   return _.mapValues(_.pick(obj, attrs), Number);
+}
+
+function selectAttrs(obj, attrs) {
+  return _.pick(obj, attrs);
 }
 
 function canonicalize(attrs) {
@@ -1381,6 +1387,7 @@ function sweepLayerGraphs(layerGraphs, biasRight) {
   var cg = new Graph();
   _.each(layerGraphs, function(lg) {
     var root = lg.graph().root;
+
     var sorted = sortSubgraph(lg, root, cg, biasRight);
     _.each(sorted.vs, function(v, i) {
       lg.node(v).order = i;
@@ -1390,10 +1397,23 @@ function sweepLayerGraphs(layerGraphs, biasRight) {
 }
 
 function assignOrder(g, layering) {
-  _.each(layering, function(layer) {
-    _.each(layer, function(v, i) {
-      g.node(v).order = i;
-    });
+  var thisNode;
+  _.each(layering, function(layer, j) {
+
+      layering[j] = _.sortBy(layer, function (v) {
+
+        thisNode = g.node(v);
+
+        if (thisNode.edgeLabel) {
+            return thisNode.edgeLabel.sortrank;
+        } else {
+            return thisNode.sortrank;
+        }
+      });
+
+      _.each(layering[j], function (v2, i) {
+        g.node(v2).order = i;
+      });
   });
 }
 
@@ -2426,6 +2446,18 @@ function networkSimplex(g) {
     f = enterEdge(t, g, e);
     exchangeEdges(t, g, e, f);
   }
+
+  // find same ranks:
+  var thisNode;
+  _.each(g.nodes(), function (node) {
+
+    thisNode = g.node(node);
+
+    if (thisNode.samerankas !== false && thisNode.samerankas) {
+        thisNode.rank = g.node(thisNode.samerankas).rank;
+    }
+
+  });
 }
 
 /*
@@ -2898,7 +2930,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
-module.exports = "0.7.4";
+module.exports = "0.0.1";
 
 },{}],31:[function(require,module,exports){
 /**
@@ -3758,6 +3790,50 @@ Graph.prototype.neighbors = function(v) {
   }
 };
 
+Graph.prototype.filterNodes = function(filter) {
+  var copy = new this.constructor({
+    directed: this._isDirected,
+    multigraph: this._isMultigraph,
+    compound: this._isCompound
+  });
+
+  copy.setGraph(this.graph());
+
+  _.each(this._nodes, function(value, v) {
+    if (filter(v)) {
+      copy.setNode(v, value);
+    }
+  }, this);
+
+  _.each(this._edgeObjs, function(e) {
+    if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
+      copy.setEdge(e, this.edge(e));
+    }
+  }, this);
+
+  var self = this;
+  var parents = {};
+  function findParent(v) {
+    var parent = self.parent(v);
+    if (parent === undefined || copy.hasNode(parent)) {
+      parents[v] = parent;
+      return parent;
+    } else if (parent in parents) {
+      return parents[parent];
+    } else {
+      return findParent(parent);
+    }
+  }
+
+  if (this._isCompound) {
+    _.each(copy.nodes(), function(v) {
+      copy.setParent(v, findParent(v));
+    });
+  }
+
+  return copy;
+};
+
 /* === Edge functions ========== */
 
 Graph.prototype.setDefaultEdgeLabel = function(newDefault) {
@@ -3796,18 +3872,19 @@ Graph.prototype.setPath = function(vs, value) {
  */
 Graph.prototype.setEdge = function() {
   var v, w, name, value,
-      valueSpecified = false;
+      valueSpecified = false,
+      arg0 = arguments[0];
 
-  if (_.isPlainObject(arguments[0])) {
-    v = arguments[0].v;
-    w = arguments[0].w;
-    name = arguments[0].name;
+  if (typeof arg0 === "object" && arg0 !== null && "v" in arg0) {
+    v = arg0.v;
+    w = arg0.w;
+    name = arg0.name;
     if (arguments.length === 2) {
       value = arguments[1];
       valueSpecified = true;
     }
   } else {
-    v = arguments[0];
+    v = arg0;
     w = arguments[1];
     name = arguments[3];
     if (arguments.length > 2) {
@@ -3919,7 +3996,7 @@ Graph.prototype.nodeEdges = function(v, w) {
 };
 
 function incrementOrInitEntry(map, k) {
-  if (_.has(map, k)) {
+  if (map[k]) {
     map[k]++;
   } else {
     map[k] = 1;
@@ -3930,7 +4007,9 @@ function decrementOrRemoveEntry(map, k) {
   if (!--map[k]) { delete map[k]; }
 }
 
-function edgeArgsToId(isDirected, v, w, name) {
+function edgeArgsToId(isDirected, v_, w_, name) {
+  var v = "" + v_;
+  var w = "" + w_;
   if (!isDirected && v > w) {
     var tmp = v;
     v = w;
@@ -3940,7 +4019,9 @@ function edgeArgsToId(isDirected, v, w, name) {
              (_.isUndefined(name) ? DEFAULT_EDGE_NAME : name);
 }
 
-function edgeArgsToObj(isDirected, v, w, name) {
+function edgeArgsToObj(isDirected, v_, w_, name) {
+  var v = "" + v_;
+  var w = "" + w_;
   if (!isDirected && v > w) {
     var tmp = v;
     v = w;
@@ -4034,14 +4115,14 @@ function read(json) {
 
 },{"./graph":46,"./lodash":49}],49:[function(require,module,exports){
 module.exports=require(10)
-},{"/Users/cpettitt/projects/dagre/lib/lodash.js":10,"lodash":51}],50:[function(require,module,exports){
-module.exports = '1.0.5';
+},{"/Users/johnmartin/Desktop/projects/dagre/lib/lodash.js":10,"lodash":51}],50:[function(require,module,exports){
+module.exports = '1.0.7';
 
 },{}],51:[function(require,module,exports){
 (function (global){
 /**
  * @license
- * lodash 3.10.0 (Custom Build) <https://lodash.com/>
+ * lodash 3.10.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern -d -o ./index.js`
  * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
@@ -4054,7 +4135,7 @@ module.exports = '1.0.5';
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '3.10.0';
+  var VERSION = '3.10.1';
 
   /** Used to compose bitmasks for wrapper metadata. */
   var BIND_FLAG = 1,

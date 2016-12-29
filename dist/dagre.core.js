@@ -547,14 +547,15 @@ function updateInputGraph(inputGraph, layoutGraph) {
 var graphNumAttrs = ["nodesep", "edgesep", "ranksep", "marginx", "marginy"],
     graphDefaults = { ranksep: 50, edgesep: 20, nodesep: 50, rankdir: "tb" },
     graphAttrs = ["acyclicer", "ranker", "rankdir", "align"],
-    nodeNumAttrs = ["width", "height"],
-    nodeDefaults = { width: 0, height: 0 },
-    edgeNumAttrs = ["minlen", "weight", "width", "height", "labeloffset"],
+    nodeNumAttrs = ["width", "height", "sortrank"],
+    nodeAttrs = ["samerankas"],
+    nodeDefaults = { width: 0, height: 0, sortrank: 0, samerankas: false},
+    edgeNumAttrs = ["minlen", "weight", "width", "height", "labeloffset", "sortrank", "samerankas"],
     edgeDefaults = {
-      minlen: 1, weight: 1, width: 0, height: 0,
+      minlen: 1, weight: 1, width: 0, height: 0, sortrank: 0,
       labeloffset: 10, labelpos: "r"
     },
-    edgeAttrs = ["labelpos"];
+    edgeAttrs = ["labelpos", "sortrank"];
 
 /*
  * Constructs a new graph from the input graph, which can be used for layout.
@@ -573,7 +574,8 @@ function buildLayoutGraph(inputGraph) {
 
   _.each(inputGraph.nodes(), function(v) {
     var node = canonicalize(inputGraph.node(v));
-    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), nodeDefaults));
+    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs),
+        selectAttrs(node, nodeAttrs), nodeDefaults));
     g.setParent(v, inputGraph.parent(v));
   });
 
@@ -831,6 +833,10 @@ function positionSelfEdges(g) {
 
 function selectNumberAttrs(obj, attrs) {
   return _.mapValues(_.pick(obj, attrs), Number);
+}
+
+function selectAttrs(obj, attrs) {
+  return _.pick(obj, attrs);
 }
 
 function canonicalize(attrs) {
@@ -1381,6 +1387,7 @@ function sweepLayerGraphs(layerGraphs, biasRight) {
   var cg = new Graph();
   _.each(layerGraphs, function(lg) {
     var root = lg.graph().root;
+
     var sorted = sortSubgraph(lg, root, cg, biasRight);
     _.each(sorted.vs, function(v, i) {
       lg.node(v).order = i;
@@ -1390,10 +1397,23 @@ function sweepLayerGraphs(layerGraphs, biasRight) {
 }
 
 function assignOrder(g, layering) {
-  _.each(layering, function(layer) {
-    _.each(layer, function(v, i) {
-      g.node(v).order = i;
-    });
+  var thisNode;
+  _.each(layering, function(layer, j) {
+
+      layering[j] = _.sortBy(layer, function (v) {
+
+        thisNode = g.node(v);
+
+        if (thisNode.edgeLabel) {
+            return thisNode.edgeLabel.sortrank;
+        } else {
+            return thisNode.sortrank;
+        }
+      });
+
+      _.each(layering[j], function (v2, i) {
+        g.node(v2).order = i;
+      });
   });
 }
 
@@ -2426,6 +2446,18 @@ function networkSimplex(g) {
     f = enterEdge(t, g, e);
     exchangeEdges(t, g, e, f);
   }
+
+  // find same ranks:
+  var thisNode;
+  _.each(g.nodes(), function (node) {
+
+    thisNode = g.node(node);
+
+    if (thisNode.samerankas !== false && thisNode.samerankas) {
+        thisNode.rank = g.node(thisNode.samerankas).rank;
+    }
+
+  });
 }
 
 /*
@@ -2898,7 +2930,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
-module.exports = "0.7.4";
+module.exports = "0.0.1";
 
 },{}]},{},[1])(1)
 });
