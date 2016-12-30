@@ -574,8 +574,7 @@ function buildLayoutGraph(inputGraph) {
 
   _.each(inputGraph.nodes(), function(v) {
     var node = canonicalize(inputGraph.node(v));
-    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs),
-        selectAttrs(node, nodeAttrs), nodeDefaults));
+    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), selectAttrs(node, nodeAttrs), nodeDefaults));
     g.setParent(v, inputGraph.parent(v));
   });
 
@@ -1400,20 +1399,20 @@ function assignOrder(g, layering) {
   var thisNode;
   _.each(layering, function(layer, j) {
 
-      layering[j] = _.sortBy(layer, function (v) {
+    layering[j] = _.sortBy(layer, function (v) {
 
-        thisNode = g.node(v);
+      thisNode = g.node(v);
 
-        if (thisNode.edgeLabel) {
-            return thisNode.edgeLabel.sortrank;
-        } else {
-            return thisNode.sortrank;
-        }
-      });
+      if (thisNode.edgeLabel) {
+        return thisNode.edgeLabel.sortrank;
+      } else {
+        return thisNode.sortrank;
+      }
+    });
 
-      _.each(layering[j], function (v2, i) {
-        g.node(v2).order = i;
-      });
+    _.each(layering[j], function (v2, i) {
+      g.node(v2).order = i;
+    });
   });
 }
 
@@ -2930,7 +2929,7 @@ function notime(name, fn) {
 }
 
 },{"./graphlib":7,"./lodash":10}],30:[function(require,module,exports){
-module.exports = "0.0.1";
+module.exports = "0.0.2";
 
 },{}]},{},[1])(1)
 });

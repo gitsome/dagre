@@ -1,6 +1,6 @@
 {
   "name": "dagre-neural-net",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "JavaScript Graph layouts for Simple Neural Networks (branch of dagre)",
   "author": "John Martin <johndavidfive@gmail.com>",
   "main": "index.js",
